@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Semaphore` struct in crate `ipc`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Semaphore">
+
+    <title>ipc::Semaphore - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='index.html'>ipc</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.Guard.html'>Guard</a><a class='struct current' href='struct.Semaphore.html'>Semaphore</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><div class='in-band'>Struct <a href='index.html'>ipc</a>&#8203;::<a class='struct' href=''>Semaphore</a>&#8203;</div><div class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-7' href='../src/ipc/home/travis/build/alexcrichton/ipc-rs/src/lib.rs.html#47-49'>[src]</a></div></h1>
+<pre class='rust struct'>pub struct Semaphore {
+    // some fields omitted
+}</pre><div class='docblock'><p>An atomic counter which can be shared across processes.</p>
+
+<p>This counter will block the current process in <code>access</code> or <code>acquire</code> when
+the count is 0, waiting for a process to invoke <code>release</code> through some
+mechanism.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../ipc/struct.Semaphore.html' title='ipc::Semaphore'>Semaphore</a></code></h3><div class='impl-methods'><h4 id='method.new' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.new' class='fnname'>new</a>(name: &amp;<a href='http://doc.rust-lang.org/master/std/primitive.str.html'>str</a>, cnt: <a href='http://doc.rust-lang.org/master/std/primitive.uint.html'>uint</a>) -&gt; <a class='type' href='http://doc.rust-lang.org/master/std/io/type.IoResult.html' title='std::io::IoResult'>IoResult</a>&lt;<a class='struct' href='../ipc/struct.Semaphore.html' title='ipc::Semaphore'>Semaphore</a>&gt;</code></h4>
+<div class='docblock'><p>Creates a new semaphore with the given name and count.</p>
+
+<p>If the current system has no semaphore named <code>name</code>, then a new
+semaphore will be created with the initial count <code>cnt</code>.</p>
+
+<p>If the current system already has a semaphore named <code>name</code>, then a
+handle to that semaphore will be returned and <code>cnt</code> will be ignored.</p>
+
+<p>Note that the name provided will be mangled as necessary when passed to
+the underlying system, so the name is not necessarily compatible with
+other processes using semaphores.</p>
+
+<h1 id="errors" class='section-header'><a
+                           href="#errors">Errors</a></h1>
+<p>Any errors which occur when creating a semaphore are returned in string
+form.</p>
+
+<h1 id="example" class='section-header'><a
+                           href="#example">Example</a></h1><pre class='rust '>
+<span class='kw'>use</span> <span class='ident'>ipc</span>::<span class='ident'>Semaphore</span>;
+
+<span class='comment'>// sem1/sem2 are handles to the same semaphore</span>
+<span class='kw'>let</span> <span class='ident'>sem1</span> <span class='op'>=</span> <span class='ident'>Semaphore</span>::<span class='ident'>new</span>(<span class='string'>&quot;foo&quot;</span>, <span class='number'>1</span>).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='ident'>sem2</span> <span class='op'>=</span> <span class='ident'>Semaphore</span>::<span class='ident'>new</span>(<span class='string'>&quot;foo&quot;</span>, <span class='number'>1</span> <span class='comment'>/* ignored */</span>).<span class='ident'>unwrap</span>();
+</pre>
+</div><h4 id='method.acquire' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.acquire' class='fnname'>acquire</a>(&amp;self)</code></h4>
+<div class='docblock'><p>Acquire a resource of this semaphore.</p>
+
+<p>This function will block until a resource is available (a count &gt; 0),
+and then decrement it and return.</p>
+</div><h4 id='method.try_acquire' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.try_acquire' class='fnname'>try_acquire</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/master/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Attempt to acquire a resource of this semaphore.</p>
+
+<p>This function is identical to <code>acquire</code> except that it will never
+blocked. This function returns <code>true</code> if a resource was acquired or
+<code>false</code> if one could not be acquired.</p>
+</div><h4 id='method.release' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.release' class='fnname'>release</a>(&amp;self)</code></h4>
+<div class='docblock'><p>Release a resource of this semaphore.</p>
+
+<p>This function will increment the count of this semaphore, waking up any
+waiters who would like the resource.</p>
+</div><h4 id='method.access' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.access' class='fnname'>access</a>(&amp;self) -&gt; <a class='struct' href='../ipc/struct.Guard.html' title='ipc::Guard'>Guard</a></code></h4>
+<div class='docblock'><p>Access a resource of this semaphore in a constrained scope.</p>
+
+<p>This function will first acquire a resource and then return an RAII
+guard structure which will release the resource when it falls out of
+scope. For a mutex-like semaphore, it is recommended to use this method
+rather than the <code>acquire</code> or <code>release</code> methods.</p>
+</div><h4 id='method.try_access' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.try_access' class='fnname'>try_access</a>(&amp;self) -&gt; <a class='type' href='http://doc.rust-lang.org/master/core/option/type.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../ipc/struct.Guard.html' title='ipc::Guard'>Guard</a>&gt;</code></h4>
+<div class='docblock'><p>Attempt to access a resource of this semaphore.</p>
+
+<p>This function is identical to <code>access</code> except that it will never block.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "ipc";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>
