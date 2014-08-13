@@ -31,11 +31,14 @@ impl Semaphore {
 
     pub unsafe fn wait(&self) {
         loop {
-            match sem_wait(self.ptr) {
-                0 => return,
+            if sem_wait(self.ptr) == 0 { return }
+
+            match os::errno() as libc::c_int {
                 libc::EINTR => {}
-                n => fail!("unknown error in sem_wait: [{}] {}", n,
-                           os::last_os_error())
+                n => {
+                    fail!("unknown error in sem_wait: [{}] {}", n,
+                          os::last_os_error())
+                }
             }
         }
     }
@@ -48,7 +51,7 @@ impl Semaphore {
                 libc::EINTR => {}
                 libc::EAGAIN => return false,
                 n => {
-                    fail!("unknown error in sem_wait: [{}] {}", n,
+                    fail!("unknown error in sem_trywait: [{}] {}", n,
                           os::last_os_error())
                 }
             }
@@ -56,11 +59,9 @@ impl Semaphore {
     }
 
     pub unsafe fn post(&self) {
-        match sem_post(self.ptr) {
-            0 => {},
-            n => fail!("unknown error in sem_post: [{}] {}", n,
-                       os::last_os_error())
-        }
+        if sem_post(self.ptr) == 0 { return }
+        fail!("unknown error in sem_post: [{}] {}", os::errno(),
+              os::last_os_error())
     }
 }
 
