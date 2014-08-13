@@ -35,9 +35,9 @@ mod consts {
 
     pub type key_t = i32;
 
-    pub static IPC_CREAT: libc::c_int = 01000;
-    pub static IPC_EXCL: libc::c_int = 02000;
-    pub static IPC_NOWAIT: libc::c_short = 04000;
+    pub static IPC_CREAT: libc::c_int = 0o1000;
+    pub static IPC_EXCL: libc::c_int = 0o2000;
+    pub static IPC_NOWAIT: libc::c_short = 0o4000;
     pub static SEM_UNDO: libc::c_short = 0x1000;
     pub static SETVAL: libc::c_int = 16;
     pub static IPC_STAT: libc::c_int = 2;
@@ -75,6 +75,58 @@ mod consts {
         __pad2: libc::c_ushort,
         __glibc_reserved1: libc::c_ulong,
         __glibc_reserved2: libc::c_ulong,
+    }
+}
+
+
+#[cfg(target_os = "macos")]
+mod consts {
+    use libc;
+
+    pub type key_t = i32;
+
+    pub static IPC_CREAT: libc::c_int = 0o1000;
+    pub static IPC_EXCL: libc::c_int = 0o2000;
+    pub static IPC_NOWAIT: libc::c_short = 0o4000;
+    pub static SEM_UNDO: libc::c_short = 0o10000;
+    pub static SETVAL: libc::c_int = 8;
+    pub static IPC_STAT: libc::c_int = 2;
+    pub static IPC_RMID: libc::c_int = 0;
+
+    #[repr(C)]
+    pub struct sembuf {
+        pub sem_num: libc::c_ushort,
+        pub sem_op: libc::c_short,
+        pub sem_flg: libc::c_short,
+    }
+
+    // ugh, this is marked as pack(4) on OSX which apparently we can't
+    // emulate in rust yet! Instead we mark the structure as packed and then
+    // insert our own manual padding.
+    #[repr(C)]
+    #[packed]
+    pub struct semid_ds {
+        pub sem_perm: ipc_perm,
+        _sem_base: i32,
+        pub sem_nsems: libc::c_ushort,
+        __my_padding_hax_ugh: libc::c_ushort,
+        pub sem_otime: libc::time_t,
+        _sem_pad1: i32,
+        pub sem_ctime: libc::time_t,
+
+        _sem_pad2: i32,
+        _sem_pad3: [i32, ..4],
+    }
+
+    #[repr(C)]
+    pub struct ipc_perm {
+        pub uid: libc::uid_t,
+        pub gid: libc::gid_t,
+        pub cuid: libc::uid_t,
+        pub cgid: libc::gid_t,
+        pub mode: libc::mode_t,
+        pub __seq: libc::c_ushort,
+        pub __key: key_t,
     }
 }
 
@@ -240,7 +292,7 @@ mod tests {
 
     use super::consts::{sembuf, semid_ds, ipc_perm};
 
-    macro_rules! offset( ($ty:ident, $f:ident) => (unsafe {
+    macro_rules! offset( ($ty:ty, $f:ident) => (unsafe {
         let f = 0 as *const $ty;
         &(*f).$f as *const _ as uint
     }) )
@@ -267,48 +319,66 @@ mod tests {
     }}
 
 int main() {{
-    assert_eq(offsetof(struct sembuf, sem_num), {});
-    assert_eq(offsetof(struct sembuf, sem_op), {});
-    assert_eq(offsetof(struct sembuf, sem_flg), {});
-    assert_eq(sizeof(struct sembuf), {});
+    assert_eq(offsetof(struct sembuf, sem_num), {sem_num});
+    assert_eq(offsetof(struct sembuf, sem_op), {sem_op});
+    assert_eq(offsetof(struct sembuf, sem_flg), {sem_flg});
+    assert_eq(sizeof(struct sembuf), {sembuf});
 
-    assert_eq(offsetof(struct ipc_perm, __key), {});
-    assert_eq(offsetof(struct ipc_perm, uid), {});
-    assert_eq(offsetof(struct ipc_perm, gid), {});
-    assert_eq(offsetof(struct ipc_perm, cuid), {});
-    assert_eq(offsetof(struct ipc_perm, cgid), {});
-    assert_eq(offsetof(struct ipc_perm, mode), {});
-    assert_eq(offsetof(struct ipc_perm, __seq), {});
-    assert_eq(sizeof(struct ipc_perm), {});
+    assert_eq(offsetof(struct ipc_perm, {key}), {keyfield});
+    assert_eq(offsetof(struct ipc_perm, uid), {uid});
+    assert_eq(offsetof(struct ipc_perm, gid), {gid});
+    assert_eq(offsetof(struct ipc_perm, cuid), {cuid});
+    assert_eq(offsetof(struct ipc_perm, cgid), {cgid});
+    assert_eq(offsetof(struct ipc_perm, mode), {mode});
+    assert_eq(offsetof(struct ipc_perm, {seq}), {seqfield});
+    assert_eq(sizeof(struct ipc_perm), {ipc_perm});
 
-    assert_eq(offsetof(struct semid_ds, sem_perm), {});
-    assert_eq(offsetof(struct semid_ds, sem_otime), {});
-    assert_eq(offsetof(struct semid_ds, sem_ctime), {});
-    assert_eq(offsetof(struct semid_ds, sem_nsems), {});
-    assert_eq(sizeof(struct semid_ds), {});
+    assert_eq(offsetof(struct semid_ds, sem_perm), {sem_perm});
+    assert_eq(offsetof(struct semid_ds, sem_otime), {sem_otime});
+    assert_eq(offsetof(struct semid_ds, sem_nsems), {sem_nsems});
+    assert_eq(sizeof(struct semid_ds), {semid_ds});
+
+    assert_eq(IPC_CREAT, {IPC_CREAT});
+    assert_eq(IPC_EXCL, {IPC_EXCL});
+    assert_eq(IPC_NOWAIT, {IPC_NOWAIT});
+    assert_eq(SEM_UNDO, {SEM_UNDO});
+    assert_eq(SETVAL, {SETVAL});
+    assert_eq(IPC_STAT, {IPC_STAT});
+    assert_eq(IPC_RMID, {IPC_RMID});
     return 0;
 }}
 
 "#,
-    offset!(sembuf, sem_num),
-    offset!(sembuf, sem_op),
-    offset!(sembuf, sem_flg),
-    mem::size_of::<sembuf>(),
+    sem_num = offset!(sembuf, sem_num),
+    sem_op = offset!(sembuf, sem_op),
+    sem_flg = offset!(sembuf, sem_flg),
+    sembuf = mem::size_of::<sembuf>(),
 
-    offset!(ipc_perm, __key),
-    offset!(ipc_perm, uid),
-    offset!(ipc_perm, gid),
-    offset!(ipc_perm, cuid),
-    offset!(ipc_perm, cgid),
-    offset!(ipc_perm, mode),
-    offset!(ipc_perm, __seq),
-    mem::size_of::<ipc_perm>(),
+    keyfield = offset!(ipc_perm, __key),
+    uid = offset!(ipc_perm, uid),
+    gid = offset!(ipc_perm, gid),
+    cuid = offset!(ipc_perm, cuid),
+    cgid = offset!(ipc_perm, cgid),
+    mode = offset!(ipc_perm, mode),
+    seqfield = offset!(ipc_perm, __seq),
+    ipc_perm = mem::size_of::<ipc_perm>(),
 
-    offset!(semid_ds, sem_perm),
-    offset!(semid_ds, sem_otime),
-    offset!(semid_ds, sem_ctime),
-    offset!(semid_ds, sem_nsems),
-    mem::size_of::<semid_ds>(),
+    sem_perm = offset!(semid_ds, sem_perm),
+    sem_otime = offset!(semid_ds, sem_otime),
+    // sem_ctime = offset!(semid_ds, sem_ctime),
+    sem_nsems = offset!(semid_ds, sem_nsems),
+    semid_ds = mem::size_of::<semid_ds>(),
+
+    IPC_CREAT = super::consts::IPC_CREAT,
+    IPC_EXCL = super::consts::IPC_EXCL,
+    IPC_NOWAIT = super::consts::IPC_NOWAIT,
+    SEM_UNDO = super::consts::SEM_UNDO,
+    SETVAL = super::consts::SETVAL,
+    IPC_STAT = super::consts::IPC_STAT,
+    IPC_RMID = super::consts::IPC_RMID,
+
+    key = if cfg!(target_os = "macos") {"_key"} else {"__key"},
+    seq = if cfg!(target_os = "macos") {"_seq"} else {"__seq"},
 ).as_slice()).unwrap();
 
         let arg = if cfg!(target_word_size = "32") {"-m32"} else {"-m64"};
