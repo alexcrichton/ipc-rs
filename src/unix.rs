@@ -156,7 +156,7 @@ impl Semaphore {
         // around this...
         //
         // see http://beej.us/guide/bgipc/output/html/multipage/semaphores.html
-        let mut semid = semget(key, 1, IPC_CREAT | IPC_EXCL | 0666);
+        let mut semid = semget(key, 1, IPC_CREAT | IPC_EXCL | 0o666);
         if semid >= 0 {
             let mut buf = sembuf {
                 sem_num: 0,
@@ -180,16 +180,19 @@ impl Semaphore {
             if semid < 0 { return Err(IoError::last_error()) }
 
             // Spin in a small loop waiting for sem_otime to become not 0
-            let ok = range(0u, 1000).any(|_| {
+            let mut ok = false;
+            for _ in range(0i, 1000) {
                 let mut buf: semid_ds = mem::zeroed();
-                semctl(semid, 0, IPC_STAT, &mut buf);
+                if semctl(semid, 0, IPC_STAT, &mut buf) != 0 {
+                    return Err(IoError::last_error())
+                }
                 if buf.sem_otime == 0 {
                     task::deschedule();
-                    false
                 } else {
-                    true
+                    ok = true;
+                    break
                 }
-            });
+            }
             if !ok {
                 return Err(IoError {
                     kind: io::TimedOut,
@@ -233,7 +236,7 @@ impl Semaphore {
         let filename = filename.to_c_str();
         let fd = libc::open(filename.as_ptr(),
                             libc::O_EXCL | libc::O_CREAT | O_RDWR,
-                            0640);
+                            0o640);
         if fd > 0 {
             libc::close(fd);
         } else if os::errno() as libc::c_int != EEXIST {
