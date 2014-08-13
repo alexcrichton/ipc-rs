@@ -2,6 +2,7 @@ use libc;
 use std::i32;
 use std::os;
 use std::hash;
+use std::io::{IoResult, IoError};
 
 pub struct Semaphore { handle: libc::HANDLE }
 
@@ -19,7 +20,7 @@ extern "system" {
 }
 
 impl Semaphore {
-    pub unsafe fn new(name: &str, cnt: uint) -> Result<Semaphore, String> {
+    pub unsafe fn new(name: &str, cnt: uint) -> IoResult<Semaphore> {
         let name = format!(r"Global\{}-{}", name.replace(r"\", ""),
                            hash::hash(&(name, "ipc-rs")));
         let mut name = name.as_slice().utf16_units().collect::<Vec<u16>>();
@@ -29,7 +30,7 @@ impl Semaphore {
                                       i32::MAX as libc::LONG,
                                       name.as_ptr());
         if handle.is_null() {
-            Err(os::last_os_error())
+            Err(IoError::last_error())
         } else {
             Ok(Semaphore { handle: handle })
         }
