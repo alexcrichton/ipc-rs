@@ -35,6 +35,9 @@
 
 extern crate libc;
 
+use std::rt::local::Local;
+use std::rt::task::Task;
+
 /// An atomic counter which can be shared across processes.
 ///
 /// This counter will block the current process in `access` or `acquire` when
@@ -75,6 +78,9 @@ impl Semaphore {
     /// let sem2 = Semaphore::new("foo", 1 /* ignored */).unwrap();
     /// ```
     pub fn new(name: &str, cnt: uint) -> Result<Semaphore, String> {
+        assert!(Local::borrow(None::<Task>).can_block(),
+                "this library is currently incompatible with libgreen, it must \
+                 be used in a context where the thread can safely block");
         Ok(Semaphore {
             inner: unsafe { try!(imp::Semaphore::new(name, cnt)) }
         })
