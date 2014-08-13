@@ -1,6 +1,7 @@
 use libc;
 use std::i32;
 use std::os;
+use std::hash;
 
 pub struct Semaphore { handle: libc::HANDLE }
 
@@ -19,7 +20,8 @@ extern "system" {
 
 impl Semaphore {
     pub unsafe fn new(name: &str, cnt: uint) -> Result<Semaphore, String> {
-        let name = format!(r"Global\{}", name);
+        let name = format!(r"Global\{}-{}", name.replace(r"\", ""),
+                           hash::hash(&(name, "ipc-rs")));
         let mut name = name.as_slice().utf16_units().collect::<Vec<u16>>();
         name.push(0);
         let handle = CreateSemaphoreW(0 as *mut _,

@@ -29,14 +29,15 @@
 //! s.release();
 //! ```
 
+#![feature(unsafe_destructor, macro_rules)]
 #![allow(non_camel_case_types)]
-#![feature(unsafe_destructor)]
 #![deny(missing_doc)]
 
 extern crate libc;
 
 use std::rt::local::Local;
 use std::rt::task::Task;
+use std::io::IoResult;
 
 /// An atomic counter which can be shared across processes.
 ///
@@ -63,14 +64,14 @@ impl Semaphore {
     /// If the current system already has a semaphore named `name`, then a
     /// handle to that semaphore will be returned and `cnt` will be ignored.
     ///
+    /// Note that the name provided will be mangled as necessary when passed to
+    /// the underlying system, so the name is not necessarily compatible with
+    /// other processes using semaphores.
+    ///
     /// # Errors
     ///
     /// Any errors which occur when creating a semaphore are returned in string
     /// form.
-    ///
-    /// The validity of `name` is platform-dependent, but you'll generally be
-    /// safe if there are no internal nul characters as well as no path
-    /// separators (`\` or `/`).
     ///
     /// # Example
     ///
@@ -81,7 +82,7 @@ impl Semaphore {
     /// let sem1 = Semaphore::new("foo", 1).unwrap();
     /// let sem2 = Semaphore::new("foo", 1 /* ignored */).unwrap();
     /// ```
-    pub fn new(name: &str, cnt: uint) -> Result<Semaphore, String> {
+    pub fn new(name: &str, cnt: uint) -> IoResult<Semaphore> {
         assert!(Local::borrow(None::<Task>).can_block(),
                 "this library is currently incompatible with libgreen, it must \
                  be used in a context where the thread can safely block");
@@ -148,7 +149,7 @@ mod tests {
 
     #[test]
     fn smoke() {
-        let s = Semaphore::new("/ipc-rs-test2", 1).unwrap();
+        let s = Semaphore::new("smoke", 1).unwrap();
         drop(s.access());
         {
             let _g = s.access();
@@ -156,5 +157,11 @@ mod tests {
             assert!(!s.try_acquire());
         }
         assert!(s.try_access().is_some());
+    }
+
+    #[test]
+    fn create_twice() {
+        let _s1 = Semaphore::new("create_twice", 1).unwrap();
+        let _s2 = Semaphore::new("create_twice", 0).unwrap();
     }
 }

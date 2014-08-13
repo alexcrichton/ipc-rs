@@ -19,8 +19,8 @@ fn main() {
 
     match os::args()[2].as_slice() {
         "test1" => {
-            let _ = ipc::Semaphore::new("/ipc-rs-foo2", 0).unwrap().release();
-            let _ = ipc::Semaphore::new("/ipc-rs-foo1", 0).unwrap().access();
+            let _ = ipc::Semaphore::new("foo2", 0).unwrap().release();
+            let _ = ipc::Semaphore::new("foo1", 0).unwrap().access();
         }
         s => fail!("unknown test: {}", s)
     }
@@ -34,8 +34,8 @@ fn me() -> Command {
 
 #[test]
 fn foo() {
-    let sem1 = ipc::Semaphore::new("/ipc-rs-foo1", 1).unwrap();
-    let sem2 = ipc::Semaphore::new("/ipc-rs-foo2", 0).unwrap();
+    let sem1 = ipc::Semaphore::new("foo1", 1).unwrap();
+    let sem2 = ipc::Semaphore::new("foo2", 0).unwrap();
     let g1 = sem1.access();
     let mut p = me().arg("test1").spawn().unwrap();
     sem2.acquire();
