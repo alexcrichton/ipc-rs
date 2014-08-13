@@ -42,12 +42,15 @@ impl Semaphore {
 
     pub unsafe fn try_wait(&self) -> bool {
         loop {
-            match sem_trywait(self.ptr) {
-                0 => return true,
+            if sem_trywait(self.ptr) == 0 { return true }
+
+            match os::errno() as libc::c_int {
                 libc::EINTR => {}
                 libc::EAGAIN => return false,
-                n => fail!("unknown error in sem_wait: [{}] {}", n,
-                           os::last_os_error())
+                n => {
+                    fail!("unknown error in sem_wait: [{}] {}", n,
+                          os::last_os_error())
+                }
             }
         }
     }

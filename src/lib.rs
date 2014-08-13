@@ -146,6 +146,11 @@ mod tests {
     fn smoke() {
         let s = Semaphore::new("/ipc-rs-test2", 1).unwrap();
         drop(s.access());
+        {
+            let _g = s.access();
+            assert!(s.try_access().is_none());
+            assert!(!s.try_acquire());
+        }
         assert!(s.try_access().is_some());
     }
 }
