@@ -68,6 +68,10 @@ impl Semaphore {
     /// Any errors which occur when creating a semaphore are returned in string
     /// form.
     ///
+    /// The validity of `name` is platform-dependent, but you'll generally be
+    /// safe if there are no internal nul characters as well as no path
+    /// separators (`\` or `/`).
+    ///
     /// # Example
     ///
     /// ```
