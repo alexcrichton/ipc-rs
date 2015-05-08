@@ -4,9 +4,13 @@ extern crate ipc;
 
 use std::env;
 use std::process::Command;
+use std::str;
 
 fn main() {
     let mut args = env::args();
+    if args.len() == 0 {
+        return run_test();
+    }
     args.next().unwrap();
     for arg in args {
         println!("Enter: {}", arg);
@@ -46,23 +50,16 @@ fn first_pass() {
     drop(sem1.access());
 }
 
-#[cfg(test)]
-mod tests {
-    use std::env;
-    use std::process::Command;
-    use std::str;
-
-    #[test]
-    fn test1() {
-        let test_exe = env::current_exe().unwrap();
-        let mut bin = test_exe.with_file_name("test");
-        bin = match test_exe.extension() {
-            Some(v) => bin.with_extension(v),
-            None => bin,
-        };
-        let output = Command::new(bin).arg("test1").output().unwrap();
-        assert! (output.status.success());
-        assert_eq! (str::from_utf8(&output.stdout).unwrap(), 
+fn run_test() {
+    let test_exe = env::current_exe().unwrap();
+    let mut bin = test_exe.with_file_name("test");
+    bin = match test_exe.extension() {
+        Some(v) => bin.with_extension(v),
+        None => bin,
+    };
+    let output = Command::new(bin).arg("test1").output().unwrap();
+    assert! (output.status.success());
+    assert_eq! (str::from_utf8(&output.stdout).unwrap(),
 r#"Enter: test1
 [0] Lock foo1
 [0] Start
@@ -75,5 +72,4 @@ Leave: test1_inner
 [0] Join
 Leave: test1
 "#);
-    }
 }

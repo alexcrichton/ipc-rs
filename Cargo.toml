@@ -5,5 +5,12 @@ version = "0.0.1"
 authors = ["Alex Crichton <alex@alexcrichton.com>"]
 
 [dependencies]
-libc = "*"
-tempdir = "*"
+libc = "0.1"
+
+[dev-dependencies]
+tempdir = "0.3"
+
+[[test]]
+name = "test"
+path = "tests/test.rs"
+harness = false

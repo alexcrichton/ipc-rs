@@ -15,15 +15,17 @@
 //! Additionally all semaphores need a `key_t` which originates from an actual
 //! existing file, so this implementation ensures that a file exists when
 //! creating a semaphore.
-extern crate libc;
 
-use libc::consts::os::posix88::{EEXIST, O_RDWR};
+#![allow(bad_style)]
+
 use std::env;
-use std::mem;
+use std::fs;
 use std::hash::{Hash, Hasher, SipHasher};
 use std::io::{Result, Error, ErrorKind};
-use std::fs;
+use std::mem;
 use std::path::PathBuf;
+use libc;
+use libc::consts::os::posix88::{EEXIST, O_RDWR};
 
 use self::consts::{IPC_CREAT, IPC_EXCL, key_t, sembuf, SEM_UNDO, IPC_NOWAIT};
 use self::consts::{IPC_STAT, IPC_RMID, SETVAL, semid_ds};
