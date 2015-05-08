@@ -1,13 +1,12 @@
 use libc;
 use std::i32;
-use std::os;
-use std::hash;
-use std::io::{IoResult, IoError};
+use std::hash::{Hash, Hasher, SipHasher};
+use std::io::{Result, Error};
 
 pub struct Semaphore { handle: libc::HANDLE }
 
-pub static WAIT_FAILED: libc::DWORD = 0xFFFFFFFF;
-pub static WAIT_TIMEOUT: libc::DWORD = 0x00000102;
+pub const WAIT_FAILED: libc::DWORD = 0xFFFFFFFF;
+pub const WAIT_TIMEOUT: libc::DWORD = 0x00000102;
 
 extern "system" {
     fn CreateSemaphoreW(lpSemaphoreAttributes: libc::LPSECURITY_ATTRIBUTES,
@@ -20,17 +19,24 @@ extern "system" {
 }
 
 impl Semaphore {
-    pub unsafe fn new(name: &str, cnt: uint) -> IoResult<Semaphore> {
+    /// Get value hash
+    fn hash<T: Hash>(value: &T) -> u64 {
+        let mut h = SipHasher::new();
+        value.hash(&mut h);
+        h.finish()
+    }
+
+    pub unsafe fn new(name: &str, cnt: usize) -> Result<Semaphore> {
         let name = format!(r"Global\{}-{}", name.replace(r"\", ""),
-                           hash::hash(&(name, "ipc-rs")));
-        let mut name = name.as_slice().utf16_units().collect::<Vec<u16>>();
+                           Semaphore::hash::<_>(&(name, "ipc-rs")));
+        let mut name = name.bytes().map(|b| b as u16).collect::<Vec<u16>>();
         name.push(0);
         let handle = CreateSemaphoreW(0 as *mut _,
                                       cnt as libc::LONG,
                                       i32::MAX as libc::LONG,
                                       name.as_ptr());
         if handle.is_null() {
-            Err(IoError::last_error())
+            Err(Error::last_os_error())
         } else {
             Ok(Semaphore { handle: handle })
         }
@@ -39,8 +45,8 @@ impl Semaphore {
     pub unsafe fn wait(&self) {
         match libc::WaitForSingleObject(self.handle, libc::INFINITE) {
             libc::WAIT_OBJECT_0 => {},
-            WAIT_FAILED => fail!("failed to wait: {}", os::last_os_error()),
-            n => fail!("bad wait(): {}/{}", n, os::errno()),
+            WAIT_FAILED => panic!("failed to wait: {}", Error::last_os_error()),
+            n => panic!("bad wait(): {}/{}", n, Error::last_os_error()),
         }
     }
 
@@ -48,14 +54,14 @@ impl Semaphore {
         match libc::WaitForSingleObject(self.handle, 0) {
             libc::WAIT_OBJECT_0 => true,
             WAIT_TIMEOUT => false,
-            WAIT_FAILED => fail!("failed to wait: {}", os::last_os_error()),
-            n => fail!("bad wait(): {}/{}", n, os::errno()),
+            WAIT_FAILED => panic!("failed to wait: {}", Error::last_os_error()),
+            n => panic!("bad wait(): {}/{}", n, Error::last_os_error()),
         }
     }
 
     pub unsafe fn post(&self) {
         match ReleaseSemaphore(self.handle, 1, 0 as *mut _) {
-            0 => fail!("failed to release semaphore: {}", os::last_os_error()),
+            0 => panic!("failed to release semaphore: {}", Error::last_os_error()),
             _ => {}
         }
     }
