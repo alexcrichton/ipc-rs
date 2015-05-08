@@ -15,7 +15,7 @@
 //!
 //! let s = match Semaphore::new("my-fun-semaphore", 1) {
 //!     Ok(sem) => sem,
-//!     Err(s) => fail!("failed to create a semaphore: {}", s)
+//!     Err(s) => panic!("failed to create a semaphore: {}", s)
 //! };
 //!
 //! // lock the semaphore
@@ -29,15 +29,11 @@
 //! s.release();
 //! ```
 
-#![feature(unsafe_destructor, macro_rules)]
 #![allow(non_camel_case_types)]
-#![deny(missing_doc)]
 
 extern crate libc;
 
-use std::rt::local::Local;
-use std::rt::task::Task;
-use std::io::IoResult;
+use std::io::Result;
 
 /// An atomic counter which can be shared across processes.
 ///
@@ -82,10 +78,7 @@ impl Semaphore {
     /// let sem1 = Semaphore::new("foo", 1).unwrap();
     /// let sem2 = Semaphore::new("foo", 1 /* ignored */).unwrap();
     /// ```
-    pub fn new(name: &str, cnt: uint) -> IoResult<Semaphore> {
-        assert!(Local::borrow(None::<Task>).can_block(),
-                "this library is currently incompatible with libgreen, it must \
-                 be used in a context where the thread can safely block");
+    pub fn new(name: &str, cnt: usize) -> Result<Semaphore> {
         Ok(Semaphore {
             inner: unsafe { try!(imp::Semaphore::new(name, cnt)) }
         })
@@ -133,7 +126,6 @@ impl Semaphore {
     }
 }
 
-#[unsafe_destructor]
 impl<'a> Drop for Guard<'a> {
     fn drop(&mut self) {
         unsafe { self.sem.inner.post() }
