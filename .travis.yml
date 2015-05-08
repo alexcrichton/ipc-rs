@@ -1,5 +1,5 @@
-install:
-- curl http://www.rust-lang.org/rustup.sh | sudo sh -
+language: rust
+sudo: false
 script:
 - cargo build --verbose
 - cargo test --verbose
