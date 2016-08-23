@@ -67,6 +67,8 @@ impl Semaphore {
     }
 }
 
+unsafe impl Send for Semaphore {}
+
 impl Drop for Semaphore {
     fn drop(&mut self) {
         unsafe { libc::CloseHandle(self.handle); }
