@@ -68,6 +68,7 @@ impl Semaphore {
 }
 
 unsafe impl Send for Semaphore {}
+unsafe impl Sync for Semaphore {}
 
 impl Drop for Semaphore {
     fn drop(&mut self) {

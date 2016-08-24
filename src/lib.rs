@@ -162,4 +162,10 @@ mod tests {
         fn send<S: Send>(_: &S) {}
         send(&Semaphore::new("send", 1).unwrap());
     }
+
+    #[test]
+    fn check_sync() {
+        fn send<S: Sync>(_: &S) {}
+        send(&Semaphore::new("sync", 1).unwrap());
+    }
 }
