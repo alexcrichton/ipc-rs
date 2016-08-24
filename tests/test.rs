@@ -8,7 +8,7 @@ use std::str;
 
 fn main() {
     let mut args = env::args();
-    if args.len() == 0 {
+    if args.len() == 1 {
         return run_test();
     }
     args.next().unwrap();
@@ -52,12 +52,7 @@ fn first_pass() {
 
 fn run_test() {
     let test_exe = env::current_exe().unwrap();
-    let mut bin = test_exe.with_file_name("test");
-    bin = match test_exe.extension() {
-        Some(v) => bin.with_extension(v),
-        None => bin,
-    };
-    let output = Command::new(bin).arg("test1").output().unwrap();
+    let output = Command::new(test_exe).arg("test1").output().unwrap();
     assert! (output.status.success());
     assert_eq! (str::from_utf8(&output.stdout).unwrap(),
 r#"Enter: test1
