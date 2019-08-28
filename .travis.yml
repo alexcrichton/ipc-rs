@@ -6,11 +6,19 @@ os:
 script:
   - cargo build --verbose
   - cargo test --verbose
-  - cargo doc
-after_success: ! '[ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ]
-  && echo ''<meta http-equiv=refresh content=0;url=ipc/index.html>'' > target/doc/index.html
-  && sudo pip install ghp-import && ghp-import -n target/doc && git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
-  gh-pages '
-env:
-  global:
-    secure: WsECGwTAnu0+FuuUsGIcvkBOrDDvR3jlbr8SMoO1y8x9X/lBa8anzJd10ApCE20Lw0TQyUdMpQYvT2/KZscWCuzi5RZr8madsShrKM6rlqsNKX0akoUsq0Mw0oeHLzhXopFnl7Itb+5/lIr3/Gyn/tzO64Mvhg38fymG+B+T+64=
+matrix:
+  include:
+    - name: gh-pages
+      os: linux
+      script:
+        - cargo doc
+        - echo '<meta http-equiv=refresh content=0;url=ipc/index.html>' > target/doc/index.html
+      deploy:
+        - provider: pages
+          skip_cleanup: true
+          local_dir: target/doc
+          github_token:
+            secure: WsECGwTAnu0+FuuUsGIcvkBOrDDvR3jlbr8SMoO1y8x9X/lBa8anzJd10ApCE20Lw0TQyUdMpQYvT2/KZscWCuzi5RZr8madsShrKM6rlqsNKX0akoUsq0Mw0oeHLzhXopFnl7Itb+5/lIr3/Gyn/tzO64Mvhg38fymG+B+T+64=
+          on:
+            branch: master
+            repo: alexcrichton/ipc-rs
