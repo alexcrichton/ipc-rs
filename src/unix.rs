@@ -106,8 +106,7 @@ mod consts {
     // ugh, this is marked as pack(4) on OSX which apparently we can't
     // emulate in rust yet! Instead we mark the structure as packed and then
     // insert our own manual padding.
-    #[repr(C)]
-    #[packed]
+    #[repr(C, packed)]
     pub struct semid_ds {
         pub sem_perm: ipc_perm,
         _sem_base: i32,
